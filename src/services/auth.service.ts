@@ -1,45 +1,43 @@
 import bcrypt from "bcrypt"; 
 import jwt from "jsonwebtoken";
-import { repositorioUsuarios } from "../persistence/user.repository"; 
+import { usuarioRepository } from "../persistence/usuario.repository"; 
 import { env } from "../config/env";
 
-export const servicioAutenticacion={
+export const servicioAutenticacion = {
 
     async registrar(nombre: string , email: string, password: string ){
-
-        const existe=repositorioUsuarios.buscarPorEmail(email);
+        // Revisar si usuario existe en la DB
+        const existe = await usuarioRepository.buscarPorEmail(email);
 
         if(existe){
-
             throw new Error("El usuario ya existe");
         }
 
-        const passwordEncriptado=await bcrypt.hash(password,10); /* encripta la contraseña del usuario*/
+        // Encriptar contraseña
+        const passwordEncriptado = await bcrypt.hash(password,10);
 
-        const nuevoUsuario={
-            id: Date.now(), 
-            nombre,
-            email,
-            password: passwordEncriptado
-        };
+        // Crear usuario en la DB
+        const nuevoUsuario = await usuarioRepository.create(nombre, email, passwordEncriptado);
 
-        return repositorioUsuarios.create(nuevoUsuario);
+        return nuevoUsuario; // retorna info de la inserción
     },
 
     async login(email: string, password: string){
-
-        const usuario = repositorioUsuarios.buscarPorEmail(email);
+        // Buscar usuario en la DB
+        const usuario = await usuarioRepository.buscarPorEmail(email);
 
         if(!usuario){
             throw new Error("Usuario no encontrado");
         }
 
+        // Comparar contraseña
         const passwordValido = await bcrypt.compare(password, usuario.password);
 
         if(!passwordValido){
             throw new Error("Contraseña incorrecta");
         }
 
+        // Generar token JWT
         const token = jwt.sign(
             { id: usuario.id, email: usuario.email },
             env.JWT_SECRET,

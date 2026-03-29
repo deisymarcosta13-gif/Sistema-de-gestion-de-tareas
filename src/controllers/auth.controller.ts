@@ -5,15 +5,20 @@ export const registrar = async (req: Request, res: Response) => {
   const { nombre, email, password } = req.body;
 
   try {
-    const usuario = await servicioAutenticacion.registrar(
+    const usuarioCreado: any = await servicioAutenticacion.registrar(
       nombre,
       email,
       password
     );
 
+    // usuarioCreado contiene info de MySQL (insertId, etc.)
     res.status(201).json({
       mensaje: "Usuario creado exitosamente",
-      usuario: usuario
+      usuario: {
+        id: usuarioCreado.insertId,
+        nombre,
+        email
+      }
     });
   } catch (error: any) {
     res.status(400).json({
@@ -23,11 +28,9 @@ export const registrar = async (req: Request, res: Response) => {
 };
 
 export const login = async (req: Request, res: Response) => {
-
   const { email, password } = req.body;
 
   try {
-
     const resultado = await servicioAutenticacion.login(email, password);
 
     res.status(200).json({
